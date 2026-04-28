@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Air Seoul Fleet Tracker</title>
+
+<!-- OG / 링크 미리보기 -->
+<meta property="og:title" content="Air Seoul Fleet Tracker">
+<meta property="og:description" content="FlightRadar24 연동 RS Tracking">
+<meta property="og:image" content="https://uccui87.github.io/airseoul-tracker/new-og-image.png">
+<meta property="og:url" content="https://uccui87.github.io/airseoul-tracker/airseoul-tracker.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://uccui87.github.io/airseoul-tracker/new-og-image.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AIR SEOUL">
+<link rel="apple-touch-icon" href="https://uccui87.github.io/airseoul-tracker/new-og-image.png">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2ec4a9">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mint: #2ec4a9;
+    --mint-dark: #24a890;
+    --mint-light: #e6f7f5;
+    --mint-pale: #f0faf9;
+    --navy: #1a2e3b;
+    --gray: #8fa3a8;
+    --light-gray: #ddecea;
+    --bg: #f2faf9;
+  }
+
+  * {
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html, body {
+    width: 100%;
+    background: var(--bg);
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .topbar {
+    width: 100%;
+    background: var(--mint);
+    padding: 18px 20px 14px;
+    text-align: center;
+  }
+
+  .airline-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    /* 원본 clamp(28px, 8vw, 48px)에서 30% 확대 → clamp(36px, 10.4vw, 62px) */
+    font-size: clamp(30px, 8.7vw, 52px);
+    letter-spacing: clamp(4px, 1.5vw, 10px);
+    color: white;
+  }
+
+  .tracker-label {
+    font-size: clamp(13px, 3.5vw, 18px);
+    color: rgba(255,255,255,0.85);
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  .content {
+    width: 100%;
+    background: white;
+    padding: 20px 16px 40px;
+  }
+
+  .section-label {
+    font-size: clamp(11px, 3vw, 14px);
+    color: var(--mint-dark);
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ───── Fleet Tracker 카드 ───── */
+  .ac-card {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 4vw, 20px);
+    width: 100%;
+    background: var(--mint-pale);
+    border: 1.5px solid var(--light-gray);
+    border-radius: clamp(12px, 4vw, 20px);
+    padding: clamp(14px, 4.5vw, 22px) clamp(12px, 4vw, 20px);
+    margin-bottom: clamp(10px, 3vw, 16px);
+    text-decoration: none;
+    color: inherit;
+    -webkit-appearance: none;
+  }
+
+  .ac-card:active {
+    background: var(--mint-light);
+    border-color: var(--mint);
+  }
+
+  /* ───── Pre-flight 링크 카드 ───── */
+  .preflight-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--navy);
+    border: 1.5px solid #2a3e4e;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: clamp(10px, 3vw, 16px);
+    text-decoration: none;
+    color: inherit;
+    -webkit-appearance: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .preflight-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(46,196,169,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .preflight-card:active {
+    background: #253748;
+    border-color: var(--mint);
+  }
+
+  .preflight-card .icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    font-size: 15px;
+    background: rgba(46,196,169,0.2);
+    border: 1.5px solid var(--mint);
+    border-radius: 50%;
+  }
+
+  .preflight-card .reg {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: clamp(18px, 5vw, 24px);
+    letter-spacing: 1.5px;
+    color: white;
+    line-height: 1.1;
+  }
+
+  .preflight-card .badge {
+    font-size: clamp(10px, 2.8vw, 12px);
+    padding: 4px 10px;
+    background: var(--mint);
+    box-shadow: 0 0 10px rgba(46,196,169,0.4);
+  }
+
+  /* ───── 공통 아이콘/텍스트/배지 ───── */
+  .icon {
+    width: clamp(44px, 13vw, 64px);
+    height: clamp(44px, 13vw, 64px);
+    min-width: clamp(44px, 13vw, 64px);
+    background: var(--mint);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(20px, 6vw, 30px);
+    flex-shrink: 0;
+  }
+
+  .ac-text { flex: 1; min-width: 0; }
+
+  .reg {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 7.5vw, 40px);
+    letter-spacing: clamp(2px, 0.8vw, 5px);
+    color: var(--navy);
+    line-height: 1.1;
+  }
+
+  .ac-sub {
+    font-size: clamp(11px, 3.2vw, 15px);
+    color: var(--gray);
+    margin-top: 3px;
+    font-weight: 300;
+  }
+
+  .badge {
+    background: var(--mint);
+    color: white;
+    font-size: clamp(11px, 3.2vw, 15px);
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: clamp(6px, 2vw, 10px) clamp(12px, 4vw, 20px);
+    border-radius: 99px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--light-gray);
+    margin: 20px 0 16px;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: clamp(11px, 3.2vw, 14px);
+    color: var(--gray);
+    font-weight: 300;
+  }
+
+  .footer-note span { color: var(--mint-dark); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="airline-label">AIR SEOUL</div>
+  <div class="tracker-label">실시간 기체 추적 · Fleet Tracker</div>
+</div>
+
+<div class="content">
+
+  <!-- ───── 섹션 1: Pre-flight Briefing ───── -->
+  <div class="section-label">브리핑 · Pre-flight</div>
+
+  <a class="preflight-card" href="https://forms.microsoft.com/Pages/ResponsePage.aspx?id=XgqNp9DzzkKpvxYXISvQ3uZXpxYSuYFJjj50oh0iNlJUREI0UEQxNzFSMFFOVFpGMkJVTTMxVlRTVC4u" target="_blank">
+    <div class="icon" style="display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2ec4a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
+    <div class="ac-text">
+      <div class="reg">PRE-FLIGHT BRIEFING CHECKLIST</div>
+    </div>
+
+  </a>
+
+  <div class="divider"></div>
+
+  <!-- ───── 섹션 2: Fleet Tracker ───── -->
+  <div class="section-label">기체 선택 · FlightRadar24</div>
+
+  <a class="ac-card" href="https://www.flightradar24.com/data/aircraft/hl7212" target="_blank">
+    <div class="icon" style="background:white;padding:4px;overflow:hidden;"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;"/></div>
+    <div class="ac-text">
+      <div class="reg">HL7212</div>
+      <div class="ac-sub">A321-231 · 에어서울</div>
+    </div>
+    <div class="badge">Track →</div>
+  </a>
+
+  <a class="ac-card" href="https://www.flightradar24.com/data/aircraft/hl7789" target="_blank">
+    <div class="icon" style="background:white;padding:4px;overflow:hidden;"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;"/></div>
+    <div class="ac-text">
+      <div class="reg">HL7789</div>
+      <div class="ac-sub">A321-231 · 에어서울</div>
+    </div>
+    <div class="badge">Track →</div>
+  </a>
+
+  <a class="ac-card" href="https://www.flightradar24.com/data/aircraft/hl7790" target="_blank">
+    <div class="icon" style="background:white;padding:4px;overflow:hidden;"><img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADnAPIDASIAAhEBAxEB/8QAHAABAAICAwEAAAAAAAAAAAAAAAYHAQUDBAgC/8QASRAAAQMCAgQJCAcFBgcAAAAAAAECAwQFBhESITGBBxMUIkFRYZGxFVJxcpKhwdEIFiMyQlZiF0NVk9IkJUVTguEzNURjZHOy/8QAGwEBAAIDAQEAAAAAAAAAAAAAAAECAwQHBgX/xAAzEQACAQMCAwYEBQUBAAAAAAAAAQIDBBEhMRJBcQUGFIGh0VFhkbETIkJTwRUzcpLh8P/aAAwDAQACEQMRAD8A9lgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+J5Y4IJJ5noyONque5diIiZqpFU4ScEr/AI9D/Lf8iUm9jBWuqFDCqzUc/FpfcloIl+0jBP8AHof5b/6R+0jBP8eh/lv/AKSeGXwMP9Ss/wB6P+y9yWgiX7SME/x6H+W/+k7tlxnhm9XBtBbLtFUVLmq5saNciqibdqEcL+BaHaFpOSjGrFt/Ne5IAAQbYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAuHG9eS8FyUkT9GouL+IbltRm1692reeeid8OF68q41fSRvzp7cziG5bNNdb18E3EENylHETkveS98XfyxtH8q8t/XJkAGQ+CDv4cucllv9DdYlXOmma9yJ0t2OTemZ0DCjcvTnKnJTjutUevqaaOopoqiFyPjlYj2OTpRUzRTkIFwGXnynguOjkfpT25/EOz26G1i92rcT00JLDwdrsrqN3bwrR/Us+/0AAINoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGsxRdYrJh6uusqplTQueiL0u/Cm9cjZlS/SIvXF0VDYIn86Z3KJ0TzW6mpvXNdxaEeKWD5/at4rK0nW5padXoimppZZ5pJ53K6WV6ve5elyrmp8gG8cXbzqwAAAAACd8B168l41ZRyPyguLOJXPZpprYvim89DIeQaeaWmqIqmBytlhekjHJ0ORc0PVuGbpFerDRXSFU0amFr1TqXLWm5c0NavHXJ0Pube8dGdtLeOq6Pf1+5sQAYD2oAAAAAAAAAAAAAAAAAAAAAAAAAAAAABhyoiKqrkia1VTy5wgXlb/i+4XFHK6FZOLg/9bdSd+td5e/C1e/IeCayWN+jUVKcmh169J2pV3Jmp5qRMkRDYoR5nge+V7mULWP8Ak/sv5MgA2DwoMua5qNc5qojkzaqptTrQRxySyshiarpJHIxjU6XKuSJ3lp8L+E2WjB9hqKdua0DEpKhydOlrz9rPvKuSTSN62sKlxQq1o7QSb837ZZVYALGiC6vo8XrjrZW2GV3Ppn8fCi+Y7am53iUqSLg3vXkHGdBXOdowPfxE/qP1e5cl3FKkeKJ9bsO98HfQqN6PR9H7b+R6fATWDSOxAAAAAAAAAAAAAAAAAAAAAAAAAAAAA611rYbdbamvqHI2KnidI9exEzBEpKKbeyKQ4f73y3EsFmifnFQR6UiJ/mP+Tcu8rY7F1rprnc6q41CqstTK6V3ZmueW7Ydc3orhWDivaN27y6nXfN6dOXoAAWNImnAvZvK+OKeWRmlBQN5S/q0k1MTv17i9sY2ht8wxcLW5EV08Koxep6a2r3ohD+AKzchwnJdJGZS3GXSRV/y26m/Fd5Y5qVJZkdU7vdnxp9mqM1/cy30e3oePnNcxyskbovaqtci9CpqVAS7hes/kfHVY1jNGCryqYtWSc77ye0ikRNpPKycyureVtWnRlvFtAwqZoqGTpV9zpaPNsj9KTzG6139RZLJgxk9T8GF78vYLoax7tKeNnET+uzV70yXeSZzmsbpOcjUTpVcjy3wQY7uVLW1tmppG00VU3jY9Wk5HtTXkq9aeBOKusq6t6vqqqaZV896qaFZfhywdi7EvHd2UJy3Wj6r33LeqL1aadcpbjStXq4xFOsuJ7An+KQe/5FR5ZdCGTDxs+rkt+LEVjkXJl0pt7svE78FTT1CZwTxSp+h6L4FIGWOcx2lG5zHdbVyX3DjGS8wVJbcT3uhVEZWOmYn4JuenftJbZsc0NQqR3GJaSRdWmnOYu/ahZSROSXA+YpI5Y2yRPa9jkzRzVzRT6LAAAAAAAAAAAAAAAAFafSAvfIsNQ2eJ+Utwk56Iv7tute9ckLLU81cLd78t43rHsfpU9IvJoderJv3l3uzMtKOZHne9F74axlFPWenlz9NPMiRkA2zlIOxbKKa5XKmt9OirLUytib6VXLM6xY3AFZuXYrlukjM4rfFzVVNXGP1J3JmVlLhWTc7PtHeXUKC5v05+hedro4bfbqagp2o2KnibGxOxEyOyEBona4xUUktir/pCWflOH6W8xtzkopdCRUT92/V7ly7yjJHsjY573I1rUzVV2IessTUVNccP19DVuayGaBzHOdsbq1LuXJTxJf62aarkpXZsjherFbszVFyVVNy3/MsHOe91i4XUa8dprXqv+YOa6Xt8qrFRqscexX/id8jTKvT0gG6kkeYUVHY7dmrZLbdaavi+9BIj/SnSndmX7BKyeCOeJyOjkYj2qnSipmh53Lf4Lbny7DSUr3Zy0TuLX1F1t+KbjRvYZSkex7pXnBVlbv8AVquq/wCfYlgBk+ce7MGTAABkwADZ2K+XCzyo6ll0olXnwvXmO+S9qFm4evlFeqbTp3aErU+0hcvOb807SnzmoqqooqplVSyuimYuaOTwXrQlSwSXcDT4WvkN7odNESOoj1TR57F607FNwZSQAAAAAAAAAAADQ4/vSWDCVfckXKVkehCnXI7U33rnuPLmaqqq5c1XWqr0qWz9Ie98ZWUOH4n82JOUzonnLqYi7s13oVMbdGOI5OX97L3xF7+EnpBY83v/AAvIAAynlzC6kzPRvAvZltOB6aSRmjUVyrUyZpryX7qeyid5Q2FLU++YkoLUxFyqJkR6p0MTW5e5FPVkMbIomRRtRrGNRrUToRNhgry5Ht+5tnxVJ3L5aLq9X6Y+p9AGsxRc0tNlnqkVOMy0Ik63Ls+e41joJEOEW+LPULaKZ/2MS5zqi/ed5voTxPNvClbuQ4ofOxuUVY1Jk9bY73695cLnOc5XOcrnOVVVV2qqkP4V7byzDaVjG5yUT9L/AELqX4KWtqnDUXzPh94bTxNjLG8dV5b+hUYAPsHLgSvguufIMTsp3vyhrG8S7q0trV79W8i8EMk8rYoWK97tiISW1WdlJJHUyqklRG5HsT8LVTWnpMVVKUXF8zPa3btK8Ky3TyXTSUtVVO0aWmmmX9DFU2LMNX5zc0tk6J2qiL4lkYRuNPdsN0FxpWMZHUQtcrWJkjXbHJuXM2p8fgwdjpzjUipxej1KZqrPdaVquqLdUsam12gqp3odEvQ1F6w7aro1Vnp2xy9EsSaLk+e8OBbBURk3GJMPVtlk0pPtqZy5Mmamr0KnQppimAZBgAg7lmuM9quMdbTrzmrk5vQ9vSilw26rhrqKKrp3aUcrdJPkUmTTgxuix1EtpldzJM5Ic+h34k+JaLJRPwAZCQAAAAAAfE8scEMk0rkbHG1XOcuxERM1U+yB8N968lYKlpYn6NRcXcnZkutG7Xr3at5MVl4Na9uY2tvOtLaKz/7qUZii6yXzEVfdpFX+0zK5iL0M2NTuRDWj0A30sHE6lSVSbnLd6vzABhy5IqgoWv8AR3s3HXGvvsrObA1KeFV852typuyTeXWRvg0svkLBlvonN0ZnR8dP679a92pNxJDSqS4pZOxdiWfg7GnTe+Mvq9fTYFe8KNcslfT29q82FnGPT9S7Pd4lhFPYpqFqsRV0yrmnGq1voTUngYp7H1Waw46unjq6SakmTOOZixu9CpkcgMZDSawzz3X0slFXT0kyKkkMjmO3KcTWue5GNRXOVckROlSY8Ldu5LiBlexuUdZHmuXnt1L7slNLhalSSpfUuTVFqb6y/wCx9uFTigpHH+0bd2dxOk+T9OXobe0W9lDBkuSzOTnu+Cdh3jBkxt5PlN5Lo+jveuMoK6wyv50D+UQovmO1OTcviWyeXeDu8rYcZW+vV2UKycTP6j9S92pdx6iRUVM0XNDTrRxLJ1Dupe+Isvw3vDTy5e3kAAYj05x1MMVRA+CeNskb0yc1yZoqFUYssj7LcVjbpOppc3QvXq81e1C2zT4xtqXOxTxNbnNGnGRL06SdG9M0KyWUCozJhNgMZUHYt9U+ir4KyNedDIj/AEp0p3HXABeUMjZYWSsXNr2o5F7FPo0mB6lanDFG5Vzcxqxr/pXLwN2ZUWAAJAAAAPPXDlevKmNH0cb86e3M4lOpZF1vXwTcXnie6RWSwVt1mVNGmhc9EXpd0JvXJDylPNLUTyVE71fLK9XvcvS5VzUz0I65PFd8r3gowto7y1fRbev2PkGAbJzwySHg3s3l3Glvont0oWv46b1Ga/euSbyOl0fR3s3F0FdfpW86d/J4VXzW63LvXwKVJcMT63Yln4y+p03tnL6LX128y2kABpHYjD10WK7qTMo+d+nPJIu1z1XvUu+XXE9P0qUc77zs+tfEpMhjeYMmChBGOE23cvwrLK1uctI5Jm+jY73eBBsNRoy0sd0vcrlLekjZLE+KVubHtVrk60XUpWENG63JJQP208r4/SiKuS92RvWs8xcTwHfK14ZwuFz0fVben2OQGAbB4gLrTI9M8Fd68u4JoamR2lUQt5PP16bNWe9Ml3nmYs/6Pd65LfquySvyjrY+NiT/ALjNqb2+BirRzHJ6Tute+HvlBvSenny9vMvMAGodUAAAKWu8KU12rKdEySOd7UTszOobDEb0fiC4PbsWofl3mvMJABkwCCyeC+RXWCVnmVDveiKSsiPBYn9y1K/+Qv8A8oS4yx2LAAEgAAA6l3tlDdqN1FcqWOpp3KirG/YqprQ0v1Cwd+XqH2CSglNowVLWhVfFUgm/mkyNfULB35eofYUfULB35eofYUkoHE/iY/AWv7UfovYjX1Cwd+XqH2FN5bKCjtlFHRUFPHTU0WaMjYmSNzXM7IDbZkpW1Gk804JP5JIAAgzhdhSVxiWC4VMK6lZM9uW9S7Sp8dUq0uJ6rVzZspW701+9FKTIZowDJQgwSnAlgw3eYqpLnaKSpq43o5ZHt5zmqmruyIsbTC10W0XmKqXPiXcyZE81endtJi8MpUpU6q4akU181knn1Dwd+XqH2B9Q8Hfl6h9gkUb2yRtkY5HMcmbVTYqH0ZuJ/Ew+Atf2o/RexG/qFg78vUPsHNQYNwvQVsVZR2SkgqIXaUcjGqitU3wHE/iSrG2i8qnHPRAAEG0DhrqhlJRzVMi5MiYr13IcxC+Eu7tjpm2iF32kuT5sl+63oTf8CG8IEBle6WV8rvvPcrl9KrmfIMmIqYACrkgBZ3BrFxeGmvVP+JM93vy+BJjX4apVorDRUypk5sSaXpXWvibAyrYsAASAAAAAAAAAAAAAAAAQrhRoFfS01yY3NYl4uRf0rs9/iTU69ypIq+hmo5kzjlYrV7O0hrKBSYOe4Uk1DWzUdQ3KSJ2ivb1LvOAxFQAACXYJxQlA1tuuL15Ln9lKuvi+xezwLEje17EexyOa5M0VFzRUKNU21jxDcrPkymlR8HTDJrbu6txZSwTkt4EQoMeW+RqJWU09O/pVvPb8zZNxdh9yZ8vROxWO+RfiRJvQRqqxtY4Wrxck07uhGRqnvXIjl5xvX1TVioI0o41/HnpP+SEOSBKsV4kprPAsUatlrXJzI8/u9rupPEq2pmmqaiSonkWSWR2k9y9Kny9znvc97nPe5c3OcuaqvafJRvJAABBANlhigW5X2lpVTNmnpydjW61+Rregsbg2tK0tvfcpm5S1OSMz2pH/AL7e4lLLJJcmwAGUkAAAAAAAAAAAAAAAAAAAAAimP7AtfTpcKRmdVC3ntRNcjPmhWxehB8a4UWR77laos3rzpoGpt/U3t7Cko8yGQQDZqVMlTUqdRgoQAAAAAAZMAAAGTAAMg2+GrBV3qpRGIsdK1ftJlTUnYnWoJOXB9ifebgjpWqlHCucrvOXzU+PYWsxqMajWtRrUTJEToQ69toqa30cdJSRpHExNSdK9q9p2TKlgkAAkAAAAAAAAAAAAAAAAAAAAAAAAEdxLhSiuyuqIVSlq1/eNTU/1k+JX14stytT8qynckeeqVmti7+jeXGYc1r2q1zUc1dSoqZopVxTBRgLVueELLWqr2wLTSL+KFdFO7YR+swBUtVVpLhG9OqViovehRxZGCFAkU2DL9GvNghkT9MqfE4FwpiBF/wCXO3SN+ZGGDSmDfR4QxA//AKJrPWlad6mwHdZNc9RTQp2KrlJwwRQ+6eCepmSGnikmkXY1jc1LCt+BLbEqOq6iaqXzUXQb7tfvJNQUNHQRcVR00UDepjcs/T1kqIwQnD2B5Hq2e8O0GbUp2LrX1l+CE6p4IaeFkMEbY42Jk1rUyRDkBdLBIABIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/2Q==" style="width:100%;height:100%;object-fit:contain;"/></div>
+    <div class="ac-text">
+      <div class="reg">HL7790</div>
+      <div class="ac-sub">A321-231 · 에어서울</div>
+    </div>
+    <div class="badge">Track →</div>
+  </a>
+
+  <a class="ac-card" href="https://www.flightradar24.com/data/aircraft/hl8255" target="_blank">
+    <div class="icon" style="background:white;padding:4px;overflow:hidden;"><img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADnAPIDASIAAhEBAxEB/8QAHAABAAICAwEAAAAAAAAAAAAAAAYHAQUDBAgC/8QASRAAAQMCAgQJCAcFBgcAAAAAAAECAwQFBhESITGBBxMUIkFRYZGxFVJxcpKhwdEIFiMyQlZiF0NVk9IkJUVTguEzNURjZHOy/8QAGwEBAAIDAQEAAAAAAAAAAAAAAAECAwQHBgX/xAAzEQACAQMCAwYEBQUBAAAAAAAAAQIDBBEhMRJBcQUGFIGh0VFhkbETIkJTwRUzcpLh8P/aAAwDAQACEQMRAD8A9lgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+J5Y4IJJ5noyONque5diIiZqpFU4ScEr/AI9D/Lf8iUm9jBWuqFDCqzUc/FpfcloIl+0jBP8AHof5b/6R+0jBP8eh/lv/AKSeGXwMP9Ss/wB6P+y9yWgiX7SME/x6H+W/+k7tlxnhm9XBtBbLtFUVLmq5saNciqibdqEcL+BaHaFpOSjGrFt/Ne5IAAQbYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAuHG9eS8FyUkT9GouL+IbltRm1692reeeid8OF68q41fSRvzp7cziG5bNNdb18E3EENylHETkveS98XfyxtH8q8t/XJkAGQ+CDv4cucllv9DdYlXOmma9yJ0t2OTemZ0DCjcvTnKnJTjutUevqaaOopoqiFyPjlYj2OTpRUzRTkIFwGXnynguOjkfpT25/EOz26G1i92rcT00JLDwdrsrqN3bwrR/Us+/0AAINoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGsxRdYrJh6uusqplTQueiL0u/Cm9cjZlS/SIvXF0VDYIn86Z3KJ0TzW6mpvXNdxaEeKWD5/at4rK0nW5padXoimppZZ5pJ53K6WV6ve5elyrmp8gG8cXbzqwAAAAACd8B168l41ZRyPyguLOJXPZpprYvim89DIeQaeaWmqIqmBytlhekjHJ0ORc0PVuGbpFerDRXSFU0amFr1TqXLWm5c0NavHXJ0Pube8dGdtLeOq6Pf1+5sQAYD2oAAAAAAAAAAAAAAAAAAAAAAAAAAAAABhyoiKqrkia1VTy5wgXlb/i+4XFHK6FZOLg/9bdSd+td5e/C1e/IeCayWN+jUVKcmh169J2pV3Jmp5qRMkRDYoR5nge+V7mULWP8Ak/sv5MgA2DwoMua5qNc5qojkzaqptTrQRxySyshiarpJHIxjU6XKuSJ3lp8L+E2WjB9hqKdua0DEpKhydOlrz9rPvKuSTSN62sKlxQq1o7QSb837ZZVYALGiC6vo8XrjrZW2GV3Ppn8fCi+Y7am53iUqSLg3vXkHGdBXOdowPfxE/qP1e5cl3FKkeKJ9bsO98HfQqN6PR9H7b+R6fATWDSOxAAAAAAAAAAAAAAAAAAAAAAAAAAAAA611rYbdbamvqHI2KnidI9exEzBEpKKbeyKQ4f73y3EsFmifnFQR6UiJ/mP+Tcu8rY7F1rprnc6q41CqstTK6V3ZmueW7Ydc3orhWDivaN27y6nXfN6dOXoAAWNImnAvZvK+OKeWRmlBQN5S/q0k1MTv17i9sY2ht8wxcLW5EV08Koxep6a2r3ohD+AKzchwnJdJGZS3GXSRV/y26m/Fd5Y5qVJZkdU7vdnxp9mqM1/cy30e3oePnNcxyskbovaqtci9CpqVAS7hes/kfHVY1jNGCryqYtWSc77ye0ikRNpPKycyureVtWnRlvFtAwqZoqGTpV9zpaPNsj9KTzG6139RZLJgxk9T8GF78vYLoax7tKeNnET+uzV70yXeSZzmsbpOcjUTpVcjy3wQY7uVLW1tmppG00VU3jY9Wk5HtTXkq9aeBOKusq6t6vqqqaZV896qaFZfhywdi7EvHd2UJy3Wj6r33LeqL1aadcpbjStXq4xFOsuJ7An+KQe/5FR5ZdCGTDxs+rkt+LEVjkXJl0pt7svE78FTT1CZwTxSp+h6L4FIGWOcx2lG5zHdbVyX3DjGS8wVJbcT3uhVEZWOmYn4JuenftJbZsc0NQqR3GJaSRdWmnOYu/ahZSROSXA+YpI5Y2yRPa9jkzRzVzRT6LAAAAAAAAAAAAAAAAFafSAvfIsNQ2eJ+Utwk56Iv7tute9ckLLU81cLd78t43rHsfpU9IvJoderJv3l3uzMtKOZHne9F74axlFPWenlz9NPMiRkA2zlIOxbKKa5XKmt9OirLUytib6VXLM6xY3AFZuXYrlukjM4rfFzVVNXGP1J3JmVlLhWTc7PtHeXUKC5v05+hedro4bfbqagp2o2KnibGxOxEyOyEBona4xUUktir/pCWflOH6W8xtzkopdCRUT92/V7ly7yjJHsjY573I1rUzVV2IessTUVNccP19DVuayGaBzHOdsbq1LuXJTxJf62aarkpXZsjherFbszVFyVVNy3/MsHOe91i4XUa8dprXqv+YOa6Xt8qrFRqscexX/id8jTKvT0gG6kkeYUVHY7dmrZLbdaavi+9BIj/SnSndmX7BKyeCOeJyOjkYj2qnSipmh53Lf4Lbny7DSUr3Zy0TuLX1F1t+KbjRvYZSkex7pXnBVlbv8AVquq/wCfYlgBk+ce7MGTAABkwADZ2K+XCzyo6ll0olXnwvXmO+S9qFm4evlFeqbTp3aErU+0hcvOb807SnzmoqqooqplVSyuimYuaOTwXrQlSwSXcDT4WvkN7odNESOoj1TR57F607FNwZSQAAAAAAAAAAADQ4/vSWDCVfckXKVkehCnXI7U33rnuPLmaqqq5c1XWqr0qWz9Ie98ZWUOH4n82JOUzonnLqYi7s13oVMbdGOI5OX97L3xF7+EnpBY83v/AAvIAAynlzC6kzPRvAvZltOB6aSRmjUVyrUyZpryX7qeyid5Q2FLU++YkoLUxFyqJkR6p0MTW5e5FPVkMbIomRRtRrGNRrUToRNhgry5Ht+5tnxVJ3L5aLq9X6Y+p9AGsxRc0tNlnqkVOMy0Ik63Ls+e41joJEOEW+LPULaKZ/2MS5zqi/ed5voTxPNvClbuQ4ofOxuUVY1Jk9bY73695cLnOc5XOcrnOVVVV2qqkP4V7byzDaVjG5yUT9L/AELqX4KWtqnDUXzPh94bTxNjLG8dV5b+hUYAPsHLgSvguufIMTsp3vyhrG8S7q0trV79W8i8EMk8rYoWK97tiISW1WdlJJHUyqklRG5HsT8LVTWnpMVVKUXF8zPa3btK8Ky3TyXTSUtVVO0aWmmmX9DFU2LMNX5zc0tk6J2qiL4lkYRuNPdsN0FxpWMZHUQtcrWJkjXbHJuXM2p8fgwdjpzjUipxej1KZqrPdaVquqLdUsam12gqp3odEvQ1F6w7aro1Vnp2xy9EsSaLk+e8OBbBURk3GJMPVtlk0pPtqZy5Mmamr0KnQppimAZBgAg7lmuM9quMdbTrzmrk5vQ9vSilw26rhrqKKrp3aUcrdJPkUmTTgxuix1EtpldzJM5Ic+h34k+JaLJRPwAZCQAAAAAAfE8scEMk0rkbHG1XOcuxERM1U+yB8N968lYKlpYn6NRcXcnZkutG7Xr3at5MVl4Na9uY2tvOtLaKz/7qUZii6yXzEVfdpFX+0zK5iL0M2NTuRDWj0A30sHE6lSVSbnLd6vzABhy5IqgoWv8AR3s3HXGvvsrObA1KeFV852typuyTeXWRvg0svkLBlvonN0ZnR8dP679a92pNxJDSqS4pZOxdiWfg7GnTe+Mvq9fTYFe8KNcslfT29q82FnGPT9S7Pd4lhFPYpqFqsRV0yrmnGq1voTUngYp7H1Waw46unjq6SakmTOOZixu9CpkcgMZDSawzz3X0slFXT0kyKkkMjmO3KcTWue5GNRXOVckROlSY8Ldu5LiBlexuUdZHmuXnt1L7slNLhalSSpfUuTVFqb6y/wCx9uFTigpHH+0bd2dxOk+T9OXobe0W9lDBkuSzOTnu+Cdh3jBkxt5PlN5Lo+jveuMoK6wyv50D+UQovmO1OTcviWyeXeDu8rYcZW+vV2UKycTP6j9S92pdx6iRUVM0XNDTrRxLJ1Dupe+Isvw3vDTy5e3kAAYj05x1MMVRA+CeNskb0yc1yZoqFUYssj7LcVjbpOppc3QvXq81e1C2zT4xtqXOxTxNbnNGnGRL06SdG9M0KyWUCozJhNgMZUHYt9U+ir4KyNedDIj/AEp0p3HXABeUMjZYWSsXNr2o5F7FPo0mB6lanDFG5Vzcxqxr/pXLwN2ZUWAAJAAAAPPXDlevKmNH0cb86e3M4lOpZF1vXwTcXnie6RWSwVt1mVNGmhc9EXpd0JvXJDylPNLUTyVE71fLK9XvcvS5VzUz0I65PFd8r3gowto7y1fRbev2PkGAbJzwySHg3s3l3Glvont0oWv46b1Ga/euSbyOl0fR3s3F0FdfpW86d/J4VXzW63LvXwKVJcMT63Yln4y+p03tnL6LX128y2kABpHYjD10WK7qTMo+d+nPJIu1z1XvUu+XXE9P0qUc77zs+tfEpMhjeYMmChBGOE23cvwrLK1uctI5Jm+jY73eBBsNRoy0sd0vcrlLekjZLE+KVubHtVrk60XUpWENG63JJQP208r4/SiKuS92RvWs8xcTwHfK14ZwuFz0fVben2OQGAbB4gLrTI9M8Fd68u4JoamR2lUQt5PP16bNWe9Ml3nmYs/6Pd65LfquySvyjrY+NiT/ALjNqb2+BirRzHJ6Tute+HvlBvSenny9vMvMAGodUAAAKWu8KU12rKdEySOd7UTszOobDEb0fiC4PbsWofl3mvMJABkwCCyeC+RXWCVnmVDveiKSsiPBYn9y1K/+Qv8A8oS4yx2LAAEgAAA6l3tlDdqN1FcqWOpp3KirG/YqprQ0v1Cwd+XqH2CSglNowVLWhVfFUgm/mkyNfULB35eofYUfULB35eofYUkoHE/iY/AWv7UfovYjX1Cwd+XqH2FN5bKCjtlFHRUFPHTU0WaMjYmSNzXM7IDbZkpW1Gk804JP5JIAAgzhdhSVxiWC4VMK6lZM9uW9S7Sp8dUq0uJ6rVzZspW701+9FKTIZowDJQgwSnAlgw3eYqpLnaKSpq43o5ZHt5zmqmruyIsbTC10W0XmKqXPiXcyZE81endtJi8MpUpU6q4akU181knn1Dwd+XqH2B9Q8Hfl6h9gkUb2yRtkY5HMcmbVTYqH0ZuJ/Ew+Atf2o/RexG/qFg78vUPsHNQYNwvQVsVZR2SkgqIXaUcjGqitU3wHE/iSrG2i8qnHPRAAEG0DhrqhlJRzVMi5MiYr13IcxC+Eu7tjpm2iF32kuT5sl+63oTf8CG8IEBle6WV8rvvPcrl9KrmfIMmIqYACrkgBZ3BrFxeGmvVP+JM93vy+BJjX4apVorDRUypk5sSaXpXWvibAyrYsAASAAAAAAAAAAAAAAAAQrhRoFfS01yY3NYl4uRf0rs9/iTU69ypIq+hmo5kzjlYrV7O0hrKBSYOe4Uk1DWzUdQ3KSJ2ivb1LvOAxFQAACXYJxQlA1tuuL15Ln9lKuvi+xezwLEje17EexyOa5M0VFzRUKNU21jxDcrPkymlR8HTDJrbu6txZSwTkt4EQoMeW+RqJWU09O/pVvPb8zZNxdh9yZ8vROxWO+RfiRJvQRqqxtY4Wrxck07uhGRqnvXIjl5xvX1TVioI0o41/HnpP+SEOSBKsV4kprPAsUatlrXJzI8/u9rupPEq2pmmqaiSonkWSWR2k9y9Kny9znvc97nPe5c3OcuaqvafJRvJAABBANlhigW5X2lpVTNmnpydjW61+Rregsbg2tK0tvfcpm5S1OSMz2pH/AL7e4lLLJJcmwAGUkAAAAAAAAAAAAAAAAAAAAAimP7AtfTpcKRmdVC3ntRNcjPmhWxehB8a4UWR77laos3rzpoGpt/U3t7Cko8yGQQDZqVMlTUqdRgoQAAAAAAZMAAAGTAAMg2+GrBV3qpRGIsdK1ftJlTUnYnWoJOXB9ifebgjpWqlHCucrvOXzU+PYWsxqMajWtRrUTJEToQ69toqa30cdJSRpHExNSdK9q9p2TKlgkAAkAAAAAAAAAAAAAAAAAAAAAAAAEdxLhSiuyuqIVSlq1/eNTU/1k+JX14stytT8qynckeeqVmti7+jeXGYc1r2q1zUc1dSoqZopVxTBRgLVueELLWqr2wLTSL+KFdFO7YR+swBUtVVpLhG9OqViovehRxZGCFAkU2DL9GvNghkT9MqfE4FwpiBF/wCXO3SN+ZGGDSmDfR4QxA//AKJrPWlad6mwHdZNc9RTQp2KrlJwwRQ+6eCepmSGnikmkXY1jc1LCt+BLbEqOq6iaqXzUXQb7tfvJNQUNHQRcVR00UDepjcs/T1kqIwQnD2B5Hq2e8O0GbUp2LrX1l+CE6p4IaeFkMEbY42Jk1rUyRDkBdLBIABIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/2Q==" style="width:100%;height:100%;object-fit:contain;"/></div>
+    <div class="ac-text">
+      <div class="reg">HL8255</div>
+      <div class="ac-sub">A321-231 · 에어서울</div>
+    </div>
+    <div class="badge">Track →</div>
+  </a>
+
+  <a class="ac-card" href="https://www.flightradar24.com/data/aircraft/hl8072" target="_blank">
+    <div class="icon" style="background:white;padding:4px;overflow:hidden;"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;"/></div>
+    <div class="ac-text">
+      <div class="reg">HL8072</div>
+      <div class="ac-sub">A321-232 · 에어서울</div>
+    </div>
+    <div class="badge">Track →</div>
+  </a>
+
+  <a class="ac-card" href="https://www.flightradar24.com/data/aircraft/hl8073" target="_blank">
+    <div class="icon" style="background:white;padding:4px;overflow:hidden;"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;"/></div>
+    <div class="ac-text">
+      <div class="reg">HL8073</div>
+      <div class="ac-sub">A321-232 · 에어서울</div>
+    </div>
+    <div class="badge">Track →</div>
+  </a>
+
+  <div class="divider"></div>
+
+  <div class="footer-note">
+    <span>FlightRadar24</span> 연동
+  </div>
+
+</div>
+
+<!-- ───── Admin 버튼 (우하단 고정) ───── -->
+<div id="admin-btn" onclick="adminOpen()" style="
+  position:fixed;bottom:18px;right:18px;
+  width:28px;height:28px;
+  background:rgba(0,0,0,0.08);
+  border-radius:50%;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;
+">
+  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</div>
+
+<!-- ───── Admin 모달 ───── -->
+<div id="admin-modal" style="
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.55);
+  z-index:1000;
+  align-items:center;justify-content:center;
+">
+  <div style="
+    background:white;border-radius:16px;
+    padding:28px 24px;width:min(320px,88vw);
+    box-shadow:0 8px 32px rgba(0,0,0,0.2);
+  ">
+    <div id="admin-login">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:2px;color:#1a2e3b;margin-bottom:4px;">ADMIN</div>
+      <div style="font-size:12px;color:#8fa3a8;margin-bottom:20px;">Air Seoul Fleet Tracker</div>
+      <input id="admin-pw" type="password" placeholder="Password" style="
+        width:100%;border:1.5px solid #ddecea;border-radius:8px;
+        padding:10px 14px;font-size:14px;outline:none;
+        font-family:'Noto Sans KR',sans-serif;margin-bottom:12px;
+      "/>
+      <div id="admin-err" style="color:#e05;font-size:12px;margin-bottom:8px;display:none;">비밀번호가 틀렸습니다</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="adminCheck()" style="
+          flex:1;background:#2ec4a9;color:white;border:none;
+          border-radius:8px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;
+        ">확인</button>
+        <button onclick="adminClose()" style="
+          flex:1;background:#f0faf9;color:#8fa3a8;border:1.5px solid #ddecea;
+          border-radius:8px;padding:10px;font-size:14px;cursor:pointer;
+        ">닫기</button>
+      </div>
+    </div>
+    <div id="admin-stats" style="display:none;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:2px;color:#1a2e3b;margin-bottom:16px;">STATS</div>
+      <div style="display:flex;gap:12px;margin-bottom:20px;">
+        <div style="flex:1;background:#f0faf9;border:1.5px solid #ddecea;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#8fa3a8;letter-spacing:1px;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Today</div>
+          <div id="stat-today" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:#2ec4a9;">–</div>
+        </div>
+        <div style="flex:1;background:#f0faf9;border:1.5px solid #ddecea;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#8fa3a8;letter-spacing:1px;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Total</div>
+          <div id="stat-total" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:#1a2e3b;">–</div>
+        </div>
+      </div>
+      <button onclick="adminClose()" style="
+        width:100%;background:#f0faf9;color:#8fa3a8;border:1.5px solid #ddecea;
+        border-radius:8px;padding:10px;font-size:14px;cursor:pointer;
+      ">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ADMIN_PW = '701376';
+  const API_NS   = 'airseoul-tracker';
+  const KEY_TOT  = 'total-hits';
+  const KEY_DAY  = 'hits-' + new Date().toISOString().slice(0,10);
+
+  function countHit() {
+    fetch('https://api.countapi.xyz/hit/' + API_NS + '/' + KEY_TOT);
+    fetch('https://api.countapi.xyz/hit/' + API_NS + '/' + KEY_DAY);
+  }
+  countHit();
+
+  function adminOpen() {
+    document.getElementById('admin-modal').style.display = 'flex';
+    document.getElementById('admin-pw').value = '';
+    document.getElementById('admin-err').style.display = 'none';
+    document.getElementById('admin-login').style.display = 'block';
+    document.getElementById('admin-stats').style.display = 'none';
+    setTimeout(() => document.getElementById('admin-pw').focus(), 100);
+  }
+
+  function adminClose() {
+    document.getElementById('admin-modal').style.display = 'none';
+  }
+
+  function adminCheck() {
+    if (document.getElementById('admin-pw').value === ADMIN_PW) {
+      document.getElementById('admin-login').style.display = 'none';
+      document.getElementById('admin-stats').style.display = 'block';
+      loadStats();
+    } else {
+      document.getElementById('admin-err').style.display = 'block';
+    }
+  }
+
+  function loadStats() {
+    document.getElementById('stat-today').textContent = '...';
+    document.getElementById('stat-total').textContent = '...';
+    fetch('https://api.countapi.xyz/get/' + API_NS + '/' + KEY_DAY)
+      .then(r => r.json()).then(d => {
+        document.getElementById('stat-today').textContent = d.value ?? 0;
+      });
+    fetch('https://api.countapi.xyz/get/' + API_NS + '/' + KEY_TOT)
+      .then(r => r.json()).then(d => {
+        document.getElementById('stat-total').textContent = d.value ?? 0;
+      });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('admin-modal').style.display === 'flex') adminCheck();
+  });
+
+  document.getElementById('admin-modal').addEventListener('click', function(e) {
+    if (e.target === this) adminClose();
+  });
+</script>
+
+</body>
+</html>
